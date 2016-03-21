@@ -1,0 +1,11 @@
+.Rproj.user
+.Rhistory
+.RData
+.apikey 
+**~
+**#
+_*
+#*
+**.csv
+scratch/
+inst/shiny/
