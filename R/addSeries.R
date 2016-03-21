@@ -9,17 +9,54 @@ addSeries <- function(
                       idcol='iso3',
                       datecol= 'date',
                       roll = 365,
-                      thr_avail = 0.5){
-    series_data  %>>%
-        select_(idcol,datecol,x) ->
-        dtx
+                      thr_avail = 0.5,
+                      y2q = FALSE,
+                      na.interpolation = NULL
+                      ){
+    dtx <- 
+        series_data  %>>%
+        select_(idcol,datecol,x) 
 
-                          (dtx %>>%
-                           setkeyv(c(idcol,datecol)))[
-                              edata %>>%
-                                  setkeyv(c(idcol,datecol)), roll = roll] ->
-                              data
+    data <-        
+        (dtx %>>%
+         setkeyv(c(idcol,datecol)))[
+            edata %>>%
+                setkeyv(c(idcol,datecol)), roll = roll] ->
+        data
 
+    if (y2q == TRUE){
+        data[month(get(datecol)) != 12,
+             (x) := NA]
+    }
+
+    if (!is.null(na.interpolation)){
+        data %>>%
+            split(. %>>% select_(ixcol) %>>% (.[[1L]])) %>>%
+            list.map({
+                . %>>%
+                    select_(x) %>>%
+                    (.[[1L]]) %>>%
+                    ts %>>%
+                    (t ~ try(na.interpolation(t,option = 'stine'))) ->
+                    o
+
+                    if ("try-error" %in% class(o)){
+                        o <-
+                            . %>>%
+                            select_(x) %>>%
+                            (.[[1L]]) %>>%
+                            as.numeric
+                    } else {
+                        o <-
+                            o %>>% as.numeric
+                    }
+
+                    .[, (x) := o]
+            }) %>>%
+             rbindlist ->
+             data
+    }
+    
     data[, avail := sum(!is.na(.SD))/length(.SD),by = ixcol,.SDcols = x]
 
     data %>>%
@@ -51,3 +88,4 @@ addSeries <- function(
 
     return(data2)
 }
+
