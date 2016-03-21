@@ -1,4 +1,4 @@
 
 
-##' @import data.table plyr dplyr lubridate zoo 
+##' @import data.table plyr dplyr lubridate imputeTS
 zzz <- function(){}
